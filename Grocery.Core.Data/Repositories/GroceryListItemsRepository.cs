@@ -2,6 +2,7 @@
 using Grocery.Core.Interfaces.Repositories;
 using Grocery.Core.Models;
 using Microsoft.Data.Sqlite;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace Grocery.Core.Data.Repositories
 {
@@ -13,11 +14,13 @@ namespace Grocery.Core.Data.Repositories
         {
 
             //ISO 8601 format: date.ToString("o", CultureInfo.InvariantCulture)
-            CreateTable(@"CREATE TABLE IF NOT EXISTS groceryListItems (
+            CreateTable(@"CREATE TABLE IF NOT EXISTS groceryListItems(
                             [Id] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                             [GroceryListID] INTERGER NOT NULL,
-                            [ProductID] DATE NOT NULL,
-                            [Amount] NVARCHAR(12) NOT NULL");
+                            [ProductID] INTERGER NOT NULL,
+                            [Amount] INTERGER NOT NULL,
+                             UNIQUE(GroceryListID, ProductID))");
+                          
             List<string> insertQueries =   [@"INSERT OR IGNORE INTO groceryListItems(GroceryListID, ProductID, Amount) VALUES( 1, 1, 3)",
                                             @"INSERT OR IGNORE INTO groceryListItems(GroceryListID, ProductID, Amount) VALUES( 1, 2, 1)",
                                             @"INSERT OR IGNORE INTO groceryListItems(GroceryListID, ProductID, Amount) VALUES( 1, 3, 4)",
@@ -108,7 +111,7 @@ namespace Grocery.Core.Data.Repositories
         public GroceryListItem? Update(GroceryListItem item)
         {
             int recordsAffected;
-            string updateQuery = $"UPDATE GroceryListItem SET GroceryListID = @GroceryListID, ProductID = @ProductID, Amount = @Amount  WHERE Id = {item.Id};";
+            string updateQuery = $"UPDATE groceryListItems SET GroceryListID = @GroceryListID, ProductID = @ProductID, Amount = @Amount  WHERE Id = {item.Id};";
             OpenConnection();
             using (SqliteCommand command = new(updateQuery, Connection))
             {
