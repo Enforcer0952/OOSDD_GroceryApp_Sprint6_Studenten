@@ -1,4 +1,5 @@
-﻿using Grocery.Core.Interfaces.Repositories;
+﻿using Grocery.Core.Data.Helpers;
+using Grocery.Core.Interfaces.Repositories;
 using Grocery.Core.Models;
 using Microsoft.Data.Sqlite;
 
@@ -42,7 +43,6 @@ namespace Grocery.Core.Data.Repositories
                     int GroceryListID = reader.GetInt32(1);
                     int ProductID = reader.GetInt32(2);
                     int Amount = reader.GetInt32(3);
-                    int clientId = reader.GetInt32(4);
                     groceryListItems.Add(new(ID, GroceryListID, ProductID, Amount));
                 }
             }
@@ -57,27 +57,69 @@ namespace Grocery.Core.Data.Repositories
 
         public GroceryListItem Add(GroceryListItem item)
         {
-            int newId = groceryListItems.Max(g => g.Id) + 1;
-            item.Id = newId;
-            groceryListItems.Add(item);
-            return Get(item.Id);
+            int recordsAffected;
+            string insertQuery = $"INSERT INTO groceryListItems(GroceryListID, ProductID, Amount) VALUES(@GroceryListID, @ProductID, @Amount) Returning RowId;";
+            OpenConnection();
+            using (SqliteCommand command = new(insertQuery, Connection))
+            {
+                command.Parameters.AddWithValue("GroceryListID", item.GroceryListId);
+                command.Parameters.AddWithValue("ProductID", item.ProductId);
+                command.Parameters.AddWithValue("Amount", item.Amount);
+
+                //recordsAffected = command.ExecuteNonQuery();
+                item.Id = Convert.ToInt32(command.ExecuteScalar());
+            }
+            CloseConnection();
+            return item;
         }
 
         public GroceryListItem? Delete(GroceryListItem item)
         {
-            throw new NotImplementedException();
+            string deleteQuery = $"DELETE FROM groceryListItems WHERE Id = {item.Id};";
+            OpenConnection();
+            Connection.ExecuteNonQuery(deleteQuery);
+            CloseConnection();
+            return item;
         }
+
 
         public GroceryListItem? Get(int id)
         {
-            return groceryListItems.FirstOrDefault(g => g.Id == id);
+            string selectQuery = $"SELECT Id, GroceryListID, ProductID, Amount FROM groceryListItems WHERE Id = {id}";
+            GroceryListItem? gl = null;
+            OpenConnection();
+            using (SqliteCommand command = new(selectQuery, Connection))
+            {
+                SqliteDataReader reader = command.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    int Id = reader.GetInt32(0);
+                    int GroceryListID = reader.GetInt32(1);
+                    int ProductID = reader.GetInt32(2);
+                    int Amount = reader.GetInt32(3);
+                    gl = (new(Id, GroceryListID, ProductID, Amount));
+                }
+            }
+            CloseConnection();
+            return gl;
         }
 
         public GroceryListItem? Update(GroceryListItem item)
         {
-            GroceryListItem? listItem = groceryListItems.FirstOrDefault(i => i.Id == item.Id);
-            listItem = item;
-            return listItem;
+            int recordsAffected;
+            string updateQuery = $"UPDATE GroceryListItem SET GroceryListID = @GroceryListID, ProductID = @ProductID, Amount = @Amount  WHERE Id = {item.Id};";
+            OpenConnection();
+            using (SqliteCommand command = new(updateQuery, Connection))
+            {
+                command.Parameters.AddWithValue("GroceryListID", item.GroceryListId);
+                command.Parameters.AddWithValue("ProductID", item.ProductId);
+                command.Parameters.AddWithValue("Amount", item.Amount);
+
+                recordsAffected = command.ExecuteNonQuery();
+            }
+            CloseConnection();
+            return item;
         }
     }
 }
