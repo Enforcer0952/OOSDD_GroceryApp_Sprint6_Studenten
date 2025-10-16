@@ -20,10 +20,10 @@ namespace Grocery.Core.Data.Repositories
                             [Price] REAL NOT NULL,
                             UNIQUE(Name, ShelfLife))");
 
-            List<string> insertQueries = [@"INSERT OR IGNORE INTO ProductRepository(Name, Stock, ShelfLife, Price) VALUES( Melk, 300, '2025-09-25', 0.95)",
-                                            @"INSERT OR IGNORE INTO ProductRepository(Name, Stock, ShelfLife, Price) VALUES( Kaas, 100, '2025-09-30', 7.95)",
-                                            @"INSERT OR IGNORE INTO ProductRepository(Name, Stock, ShelfLife, Price) VALUES( Brood, 400, '2025-09-12', 2.19)",
-                                            @"INSERT OR IGNORE INTO ProductRepository(Name, Stock, ShelfLife, Price) VALUES( Cornflakes, 0, '2025-12-31', 1.48)"];
+            List<string> insertQueries = [@"INSERT OR IGNORE INTO ProductRepository(Name, Stock, ShelfLife, Price) VALUES( 'Melk', 300, '2025-9-25', 0.95)",
+                                            @"INSERT OR IGNORE INTO ProductRepository(Name, Stock, ShelfLife, Price) VALUES( 'Kaas', 100, '2025-9-30', 7.95)",
+                                            @"INSERT OR IGNORE INTO ProductRepository(Name, Stock, ShelfLife, Price) VALUES( 'Brood', 400, '2025-9-12', 2.19)",
+                                            @"INSERT OR IGNORE INTO ProductRepository(Name, Stock, ShelfLife, Price) VALUES( 'Cornflakes', 0, '2025-12-31', 1.48)"];
             InsertMultipleWithTransaction(insertQueries);
             GetAll();
         }
@@ -53,8 +53,8 @@ namespace Grocery.Core.Data.Repositories
 
         public Product? Get(int id)
         {
-            string selectQuery = $"SELECT Id, Name, date(Date), Color, ClientId FROM GroceryList WHERE Id = {id}";
-            ProductRepository? PR = null;
+            string selectQuery = $"SELECT Id, Name, Stock, ShelfLife, Price FROM ProductRepository WHERE Id = {id}";
+            Product? PR = null;
             OpenConnection();
             using (SqliteCommand command = new(selectQuery, Connection))
             {
@@ -71,7 +71,7 @@ namespace Grocery.Core.Data.Repositories
                 }
             }
             CloseConnection();
-            return gl;
+            return PR;
         }
 
         public Product Add(Product item)
