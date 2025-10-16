@@ -1,4 +1,5 @@
-﻿using Grocery.Core.Interfaces.Repositories;
+﻿using Grocery.Core.Data.Helpers;
+using Grocery.Core.Interfaces.Repositories;
 using Grocery.Core.Models;
 using Microsoft.Data.Sqlite;
 
@@ -52,7 +53,25 @@ namespace Grocery.Core.Data.Repositories
 
         public Product? Get(int id)
         {
-            return Products.FirstOrDefault(p => p.Id == id);
+            string selectQuery = $"SELECT Id, Name, date(Date), Color, ClientId FROM GroceryList WHERE Id = {id}";
+            ProductRepository? PR = null;
+            OpenConnection();
+            using (SqliteCommand command = new(selectQuery, Connection))
+            {
+                SqliteDataReader reader = command.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    int Id = reader.GetInt32(0);
+                    string name = reader.GetString(1);
+                    int stock = reader.GetInt32(2);
+                    DateOnly shelflife = DateOnly.FromDateTime(reader.GetDateTime(3));
+                    Decimal Price = reader.GetDecimal(4);
+                    PR = (new(Id, name, stock, shelflife, Price));
+                }
+            }
+            CloseConnection();
+            return gl;
         }
 
         public Product Add(Product item)
@@ -76,15 +95,28 @@ namespace Grocery.Core.Data.Repositories
 
         public Product? Delete(Product item)
         {
-            throw new NotImplementedException();
+            string deleteQuery = $"DELETE FROM ProductRepository WHERE Id = {item.Id};";
+            OpenConnection();
+            Connection.ExecuteNonQuery(deleteQuery);
+            CloseConnection();
+            return item;
         }
-
         public Product? Update(Product item)
         {
-            Product? product = products.FirstOrDefault(p => p.Id == item.Id);
-            if (product == null) return null;
-            product.Id = item.Id;
-            return product;
+            int recordsAffected;
+            string updateQuery = $"UPDATE GroceryList SET Name = @Name, Stock = @Stock, ShelfLife = @ShelfLife, Price = @Price  WHERE Id = {item.Id};";
+            OpenConnection();
+            using (SqliteCommand command = new(updateQuery, Connection))
+            {
+                command.Parameters.AddWithValue("Name", item.Name);
+                command.Parameters.AddWithValue("Stock", item.Stock);
+                command.Parameters.AddWithValue("ShelfLife", item.ShelfLife);
+                command.Parameters.AddWithValue("Price", item.Price);
+
+                recordsAffected = command.ExecuteNonQuery();
+            }
+            CloseConnection();
+            return item;
         }
     }
 }
